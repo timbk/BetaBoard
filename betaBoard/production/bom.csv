@@ -12,7 +12,7 @@ Designator,Footprint,Quantity,Value,LCSC Part #
 D19,0603,1,LED,
 "D20, D21, D22, D23",D_MiniMELF,4,ZMM3V3-M,
 J1,PinHeader_1x02_P2.54mm_castellation,1,DNP,
-J2,AMPHENOL_10103592-0001LF,1,USB_B_Micro,
+J2,AMPHENOL_10103592-0001LF,1,AMPHENOL_10103592-0001LF,
 J3,PinSocket_1x02_P2.54mm_Vertical,1,DNP,
 "J4, J5",PinHeader_1x03_P2.54mm_Vertical,2,DNP,
 J6,PinHeader_1x06_P2.54mm_Vertical,1,DNP,

@@ -2297,7 +2297,7 @@
     (in_bom yes) (on_board yes)
     (uuid a09ce6cf-1c69-4031-a0db-c493bb500671)
     (property "Reference" "J2" (id 0) (at 111.76 47.625 0))
-    (property "Value" "USB_B_Micro" (id 1) (at 111.76 50.165 0))
+    (property "Value" "AMPHENOL_10103592-0001LF" (id 1) (at 111.76 50.165 0))
     (property "Footprint" "betaBoard:AMPHENOL_10103592-0001LF" (id 2) (at 115.57 62.23 0)
       (effects (font (size 1.27 1.27)) hide)
     )
@@ -3102,7 +3102,7 @@
       (reference "J1") (unit 1) (value "DNP") (footprint "betaBoard:PinHeader_1x02_P2.54mm_castellation")
     )
     (path "/a09ce6cf-1c69-4031-a0db-c493bb500671"
-      (reference "J2") (unit 1) (value "USB_B_Micro") (footprint "betaBoard:AMPHENOL_10103592-0001LF")
+      (reference "J2") (unit 1) (value "AMPHENOL_10103592-0001LF") (footprint "betaBoard:AMPHENOL_10103592-0001LF")
     )
     (path "/7a4fa37f-e348-40eb-8e06-344081235cb0"
       (reference "J3") (unit 1) (value "DNP") (footprint "Connector_PinSocket_2.54mm:PinSocket_1x02_P2.54mm_Vertical")
