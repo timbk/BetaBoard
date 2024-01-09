@@ -7,3 +7,6 @@
 
 *.kicad_prl
 *.log
+
+betaBoard/production/
+
