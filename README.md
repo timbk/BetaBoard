@@ -32,3 +32,13 @@ Design concepts:
 * File down SMD LEDs for less absorption?
 * 3D-Printed Case?
 * Interconnect multiple detectors?
+
+## R2.0 ideas
+
+* Put VCC on interconnect instead of 3V3
+* Review diode cutout size
+* Increase power supply castellated hole distance
+* Increase LDO heat sink plane size
+* Think about how usefull the coincidence concept is: 2x2 = 2+2 = 4!
+* Silk to highlight Diode grouping
+* Seperate bulk capacitor on 5V rail for analog
