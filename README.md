@@ -45,6 +45,8 @@ Design concepts:
 
 ## R1.0 Notes
 
+![PCB first LED blinking](img/hello_world.gif)
+
 * MCU, buttons, USB etc work perfectly out of the box :D
 * High USB noise (1kHz spikes)
     * R14 requires a parallel C to get rid of noise from USB line
