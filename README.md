@@ -6,8 +6,8 @@ The detector concept is adapted from the [DIY Particle Detector Project](https:/
 
 ## PCB
 
-![PCB front view](img/r1.0_pcb_front.png)
-![PCB back view](img/r1.0_pcb_back.png)
+![PCB front view](other/img/r1.0_pcb_front.png)
+![PCB back view](other/img/r1.0_pcb_back.png)
 
 [Schematic](betaBoard/pdf/betaBoard_sch.pdf)
 [Layout](betaBoard/pdf/betaBoard_pdf.pdf)
@@ -45,7 +45,7 @@ Design concepts:
 
 ## R1.0 Notes
 
-![PCB first LED blinking](img/hello_world.gif)
+![PCB first LED blinking](other/img/hello_world.gif)
 
 Good:
 * MCU, buttons, USB etc work perfectly out of the box :D

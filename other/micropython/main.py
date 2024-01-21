@@ -17,7 +17,7 @@ def gpio_init():
 import time, array, uctypes, rp_devices as devs
 
 def adc_dma_read():
-    ADC_CHAN = 1
+    ADC_CHAN = 2
     ADC_PIN  = 26 + ADC_CHAN
 
     adc = devs.ADC_DEVICE
@@ -35,7 +35,7 @@ def adc_dma_read():
     # Multiple ADC samples using DMA
     DMA_CHAN = 0
     NSAMPLES = 10000
-    RATE = 100000
+    RATE = 1000000
     dma_chan = devs.DMA_CHANS[DMA_CHAN]
     dma = devs.DMA_DEVICE
 
@@ -65,13 +65,14 @@ def adc_dma_read():
     adc.CS.START_MANY = 0
     dma_chan.CTRL_TRIG.EN = 0
 
-    # split to use less memory
-    # vals = [("%1.3f" % (val*3.3/4096)) for val in adc_buff]
-    for vals_idx in range(0, len(adc_buff), 40):
-        vals = ' '.join(f'{i:04X}' for i in adc_buff[vals_idx:min(vals_idx+40, len(adc_buff))])
-        print(vals, end=' ')
-        time.sleep_ms(1)
-    print()
+    if min(adc_buff) < 750:
+        # split to use less memory
+        # vals = [("%1.3f" % (val*3.3/4096)) for val in adc_buff]
+        for vals_idx in range(0, len(adc_buff), 40):
+            vals = ' '.join(f'{i:04X}' for i in adc_buff[vals_idx:min(vals_idx+40, len(adc_buff))])
+            print(vals, end=' ')
+            time.sleep_ms(1)
+        print()
 
 ##############################
 ## main
