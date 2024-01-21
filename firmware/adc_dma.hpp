@@ -10,7 +10,7 @@
 static uint adc_dma_channel;
 
 fifo<uint16_t *> adc_queue(ADC_QUEUE_MAX_SIZE);
-static uint16_t *adc_current_buffer=NULL, *adc_temp_buffer=NULL;
+static uint16_t *adc_current_buffer=NULL;
 
 static bool adc_queue_overflow = false;
 
@@ -19,28 +19,19 @@ void dma_handler() {
     dma_hw->ints0 = 1u << adc_dma_channel;
 
     if(not adc_queue.is_full()) {
-        puts("adc tick");
+        // puts("adc tick");
         adc_queue.push(adc_current_buffer);
         adc_current_buffer = new uint16_t[ADC_BLOCK_SIZE];
-
-        // Kick off the next transfer.
-        dma_channel_set_write_addr(adc_dma_channel, adc_current_buffer, true);
     } else {
         // puts("adc queue full");
-        adc_queue.debug();
+        // adc_queue.debug();
         if(not adc_queue_overflow) {
             adc_queue_overflow = true;
         }
-
-        // if(adc_temp_buffer != NULL) {
-        //     delete [] adc_temp_buffer;
-        // }
-        // adc_temp_buffer = new uint16_t[ADC_BLOCK_SIZE];
-        // dma_channel_set_write_addr(adc_dma_channel, adc_temp_buffer, true);
     }
 
     // Kick off the next transfer.
-    // dma_channel_set_write_addr(adc_dma_channel, adc_current_buffer, true);
+    dma_channel_set_write_addr(adc_dma_channel, adc_current_buffer, true);
 }
 
 void my_adc_init(void) {

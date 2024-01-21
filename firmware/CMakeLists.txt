@@ -32,5 +32,5 @@ pico_add_extra_outputs(betaBoard)
 # add url via pico_set_program_url
 # example_auto_set_url(betaBoard)
 
-# pico_enable_stdio_usb(betaBoard 1)
-pico_enable_stdio_uart(betaBoard 1)
+pico_enable_stdio_usb(betaBoard 1)
+pico_enable_stdio_uart(betaBoard 0)
