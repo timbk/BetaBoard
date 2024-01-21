@@ -5,6 +5,7 @@
 // Pico
 #include "pico/stdlib.h"
 
+#include "version.h"
 #include "config.h" // compile time configuration options
 #include "adc_dma.hpp"
 
@@ -23,7 +24,9 @@ void actual_main(void) {
     stdio_init_all();
     // stdio_uart_init_full(uart0, 115200, 4, -1);
 
-    puts("Hello");
+    puts("BetaBoard");
+    puts(GIT_COMMIT_HASH);
+    puts(COMPILE_DATE);
 
     // TODO
     //  - get continuous read to work properly

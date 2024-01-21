@@ -1,2 +1,3 @@
 #!/bin/sh
-cd build && make
+./gen_version_header.sh
+cd build && cmake .. && make
