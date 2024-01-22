@@ -2,9 +2,9 @@
 
 #define LED1_PIN 18
 
-#define DEFAULT_ADC_CHANNEL 1
+#define DEFAULT_ADC_CHANNEL 2
 
-#define ADC_RATE 100000 // ADC sample rate
+#define ADC_RATE 200000 // ADC sample rate
 #define ADC_CLOCK_DIV (48000000 / ADC_RATE - 1) // clock divider value
 
 #define ADC_BLOCK_SIZE (1024*8) // Brackets are important!!
