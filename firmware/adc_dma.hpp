@@ -21,7 +21,7 @@ fifo<ADC_DATA_BLOCK *> adc_queue(ADC_QUEUE_MAX_SIZE);
 // pointer to keep a record of the buffer currently being used (in priciple it is also in the DMA registers)
 static ADC_DATA_BLOCK *adc_current_buffer=NULL;
 
-static bool adc_queue_overflow = false; // overflow indicator flag
+bool adc_queue_overflow = false; // overflow indicator flag
 
 /**
  * The main ADC DMA handler

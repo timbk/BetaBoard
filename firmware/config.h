@@ -9,7 +9,8 @@
 
 // ADC rate config
 #define ADC_RATE 200000 // ADC sample rate
-#define ADC_CLOCK_DIV (48000000 / ADC_RATE - 1) // clock divider value
+#define ADC_CLOCK_DIV (48000000 / ADC_RATE - 1) // clock divider value, Brackets are important!
+#define ADC_ACTUAL_RATE (48000000 / (ADC_CLOCK_DIV + 1)) // actual sample rate
 
 // ADC buffer settings
 #define ADC_BLOCK_SIZE (1024*8) // Buffer size, Brackets are important!!

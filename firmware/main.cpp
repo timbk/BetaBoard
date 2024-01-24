@@ -39,21 +39,29 @@ void print_timeseries_info(int16_t *data) {
     // printf("%.2f C\n", tempC);
 }
 
-void print_peaks(int16_t *data) {
+void print_peaks(ADC_DATA_BLOCK *data_block) {
     const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
     uint start, stop;
     const uint pre=64, post=128, ignore=64;
+
+    int16_t *data = (int16_t *)data_block->samples;
 
     for(uint i=0; i<ADC_BLOCK_SIZE; ++i) {
         if(data[i] < threshold) {
             start = (i >= pre) ? i-pre : 0;
             stop = (i <= (ADC_BLOCK_SIZE-post)) ? i+post : ADC_BLOCK_SIZE;
+
+            uint64_t timestamp = data_block->timestamp_us_end - ((ADC_BLOCK_SIZE-i)*1000000/ADC_ACTUAL_RATE);
+
+            printf("T %u %llu %u # ", data_block->block_idx, timestamp, adc_queue_overflow);
+            adc_queue_overflow = false;
+
             for(uint j=start; j<stop; ++j) {
                 printf("%i ", data[j]);
             }
             puts("");
 
-            i += ignore;
+            i += ignore; // skip the next few samples to prevent retriggering
         }
     }
 }
@@ -119,7 +127,7 @@ void actual_main(void) {
                 puts("");
             } else {
                 print_timeseries_info((int16_t *)data->samples);
-                print_peaks((int16_t *)data->samples);
+                print_peaks(data);
             }
 
             delete [] data->samples; // NOTE: Keep me!!

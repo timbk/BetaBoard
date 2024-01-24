@@ -71,5 +71,15 @@ Challenges:
 
 * Time distribution of pulses
 * Rate vs distance (1/d^2 + offset)
+* Absorption coefficient
+    * Increase material thickness between detector and source
 * Spectroscopy?? (alphas, sand down diode?
 * Balloon in cellar
+
+## Serial interface
+
+* `T` `T <block_index> <timestamp_us> <overflow> # <sample_0> <sample_1> .. <sample_N>`
+    * `block_index`: uint16_t, mainly relevant for debugging
+    * `timestamp_us`: uint64_t, Trigger point timestamp in micro seconds since start of the measurement
+    * `overflow`: bool, set to 1 if an overflow happend prior to this sample
+    * `sample_n`:  int16_t, samples from the triggered waveform
