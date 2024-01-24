@@ -11,9 +11,12 @@
 
 #include "class/cdc/cdc_device.h"
 
+//////////////////////////////////////////////////
+// global variables
 struct SETTINGS {
     int16_t trigger_threshold;
     uint samples_pre, samples_post, trigger_ignore;
+    bool trigger_enabled;
 };
 
 SETTINGS settings = {
@@ -21,7 +24,19 @@ SETTINGS settings = {
     64,  // pre
     128, // post
     64,  // trigger_ignore
+    true, // trigger_neabled
 };
+
+bool execute_data_dump_raw = false;
+bool execute_data_dump_hpf = false;
+
+//////////////////////////////////////////////////
+// functions
+void print_version_info() {
+    puts("BetaBoard");
+    puts(GIT_COMMIT_HASH);
+    puts(COMPILE_DATE);
+}
 
 void my_gpio_init(void) {
     // LED pin init
@@ -30,6 +45,7 @@ void my_gpio_init(void) {
     gpio_put(LED1_PIN, 0);
 }
 
+/*
 void print_timeseries_info(int16_t *data) {
     int32_t sum = 0;
     int16_t min=0x7FFF, max=-0x7FFF;
@@ -52,6 +68,7 @@ void print_timeseries_info(int16_t *data) {
     // float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
     // printf("%.2f C\n", tempC);
 }
+*/
 
 void print_peaks(ADC_DATA_BLOCK *data_block) {
     // const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
@@ -100,17 +117,57 @@ void lpf(int16_t *array, uint len) {
     }
 }
 
+static const char help_msg[] = "O Usage:\n"
+                               "\th: show this message\n"
+                               "\tp <pre> <post>: set/get recorded samples before/after trigger\n"
+                               "\ti <ignored>: set/get minimum delay between two triggers in samples\n"
+                               "\tt <threshold>: set trigger threshold (negative integer, default: -68)\n"
+                               "\tT <enabled>: 1=enabled, 0=disabled; enable or disable the trigger\n"
+                               "\tv: print firmware version info\n"
+                               "\tb: dump one block of samples of raw values\n"
+                               "\tB: dump one block of samples after the high pass filter\n"
+                               ;
 void handle_user_input(const char *input) {
     uint16_t p1, p2;
 
     switch(input[0]) {
+        case 'v': // print version info
+            printf("O ");
+            print_version_info();
+            break;
         case 'p': // set pre/post trigger sample count
+            if(sscanf(input, "p %hu %hu", &p1, &p2) >= 2) {
+                settings.samples_pre = p1;
+                settings.samples_post = p2;
+            }
+            printf("Op %hu %hu\n", settings.samples_pre, settings.samples_post);
+            break;
+        case 'i': // set ignored sample count after trigger
+            if(sscanf(input, "i %hu", &p1) >= 1) {
+                settings.trigger_ignore = p1;
+            }
+            printf("Oi %hu\n", settings.trigger_ignore);
             break;
         case 't': // set trigger threshold
-            if(sscanf(input, "t %hi", &p1) > 0) {
+            if(sscanf(input, "t %hi", &p1) >= 1) {
                 settings.trigger_threshold = p1;
             }
             printf("Ot %hi\n", settings.trigger_threshold);
+            break;
+        case 'T': // set trigger status
+            if(sscanf(input, "T %hi", &p1) >= 1) {
+                settings.trigger_enabled = p1;
+            }
+            printf("OT %hi\n", settings.trigger_enabled!=0 ? 1 : 0);
+            break;
+        case 'b': // dump one full block of samples
+            execute_data_dump_raw = true;
+            break;
+        case 'B': // dump one full block of samples
+            execute_data_dump_hpf = true;
+            break;
+        case 'h': // help message
+            puts(help_msg);
             break;
         default:
             puts("E Unknown command");
@@ -134,6 +191,21 @@ void read_user_input() {
     }
 }
 
+void print_data_dump(int16_t *samples) {
+    printf("Ob ");
+    for(uint i=0; i<ADC_BLOCK_SIZE; i+=8) {
+        printf("%i %i %i %i %i %i %i %i ",
+                samples[i], samples[i+1], samples[i+2], samples[i+3],
+                samples[i+4], samples[i+5], samples[i+6], samples[i+7]);
+    }
+    puts("");
+
+}
+
+//////////////////////////////////////////////////
+// main
+
+/// Actual main function
 void actual_main(void) {
     my_gpio_init();
 
@@ -142,10 +214,7 @@ void actual_main(void) {
     // stdio_uart_init_full(uart0, 115200, 4, -1);
     getchar_timeout_us(0); // disable getchar timeout
 
-    // Version info print
-    puts("\nBetaBoard");
-    puts(GIT_COMMIT_HASH);
-    puts(COMPILE_DATE);
+    print_version_info();
 
     // initialize ADC DMA
     puts("ADC init..");
@@ -159,26 +228,31 @@ void actual_main(void) {
 
     while (1) {
         // debug print
-        if((time_us_32() - last_print) > 10e6) {
+        /*if((time_us_32() - last_print) > 10e6) {
             // puts("*");
             // adc_queue.debug();
             last_print = time_us_32();
             printf("block_cnt: %lu\n", block_cnt);
-        }
+        }*/
 
         // retrieve and process ADC data
         if(not adc_queue.is_empty()) {
             ADC_DATA_BLOCK *data = (ADC_DATA_BLOCK*)adc_queue.pop();
             block_cnt += 1;
 
+            if(execute_data_dump_raw) {
+                print_data_dump((int16_t *)data->samples);
+                execute_data_dump_raw = false;
+            }
+
             lpf((int16_t *)data->samples, ADC_BLOCK_SIZE);
 
-            if(CONTINUOUS_DUMP) {
-                for(uint i=0; i<ADC_BLOCK_SIZE; i+=8) {
-                    printf("%i %i %i %i %i %i %i %i ", data->samples[i], data->samples[i+1], data->samples[i+2], data->samples[i+3], data->samples[i+4], data->samples[i+5], data->samples[i+6], data->samples[i+7]);
-                }
-                puts("");
-            } else {
+            if(execute_data_dump_hpf) {
+                print_data_dump((int16_t *)data->samples);
+                execute_data_dump_hpf = false;
+            }
+
+            if(settings.trigger_enabled) {
                 // print_timeseries_info((int16_t *)data->samples);
                 print_peaks(data);
             }
@@ -195,6 +269,7 @@ void actual_main(void) {
     }
 }
 
+/// Wrapper around main function to catch exception and print meaningful debug messages
 int main(void) {
     try {
         actual_main();
