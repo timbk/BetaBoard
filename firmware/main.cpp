@@ -9,6 +9,20 @@
 #include "config.h" // compile time configuration options
 #include "adc_dma.hpp"
 
+#include "class/cdc/cdc_device.h"
+
+struct SETTINGS {
+    int16_t trigger_threshold;
+    uint samples_pre, samples_post, trigger_ignore;
+};
+
+SETTINGS settings = {
+    -68, // trigger threshold
+    64,  // pre
+    128, // post
+    64,  // trigger_ignore
+};
+
 void my_gpio_init(void) {
     // LED pin init
     gpio_init(LED1_PIN);
@@ -40,20 +54,22 @@ void print_timeseries_info(int16_t *data) {
 }
 
 void print_peaks(ADC_DATA_BLOCK *data_block) {
-    const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
+    // const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
     uint start, stop;
-    const uint pre=64, post=128, ignore=64;
+    // const uint pre=64, post=128, ignore=64;
 
     int16_t *data = (int16_t *)data_block->samples;
 
     for(uint i=0; i<ADC_BLOCK_SIZE; ++i) {
-        if(data[i] < threshold) {
-            start = (i >= pre) ? i-pre : 0;
-            stop = (i <= (ADC_BLOCK_SIZE-post)) ? i+post : ADC_BLOCK_SIZE;
+        if(data[i] < settings.trigger_threshold) {
+            // TODO: keep last waveform to grab samples from it if the trigger was on the edge
+            // TODO: handle triggers at the very end of a sample block
+            start = (i >= settings.samples_pre) ? i-settings.samples_pre : 0;
+            stop = (i <= (ADC_BLOCK_SIZE-settings.samples_post)) ? i+settings.samples_post : ADC_BLOCK_SIZE;
 
             uint64_t timestamp = data_block->timestamp_us_end - ((ADC_BLOCK_SIZE-i)*1000000/ADC_ACTUAL_RATE);
 
-            printf("T %u %llu %u # ", data_block->block_idx, timestamp, adc_queue_overflow);
+            printf("OT %u %llu %u # ", data_block->block_idx, timestamp, adc_queue_overflow);
             adc_queue_overflow = false;
 
             for(uint j=start; j<stop; ++j) {
@@ -61,7 +77,7 @@ void print_peaks(ADC_DATA_BLOCK *data_block) {
             }
             puts("");
 
-            i += ignore; // skip the next few samples to prevent retriggering
+            i += settings.trigger_ignore; // skip the next few samples to prevent retriggering
         }
     }
 }
@@ -84,12 +100,47 @@ void lpf(int16_t *array, uint len) {
     }
 }
 
+void handle_user_input(const char *input) {
+    uint16_t p1, p2;
+
+    switch(input[0]) {
+        case 'p': // set pre/post trigger sample count
+            break;
+        case 't': // set trigger threshold
+            if(sscanf(input, "t %hi", &p1) > 0) {
+                settings.trigger_threshold = p1;
+            }
+            printf("Ot %hi\n", settings.trigger_threshold);
+            break;
+        default:
+            puts("E Unknown command");
+    }
+}
+
+void read_user_input() {
+    char c;
+    static char buffer[USER_INPUT_BUFFER_SIZE+1];
+    static uint buffer_length = 0;
+
+    while( (c = getchar_timeout_us(0)) != 0xFF) {
+        if((c == USER_INPUT_COMMIT_CHAR) and (buffer_length > 0)) {
+            buffer[buffer_length] = 0;
+            handle_user_input(buffer);
+            buffer_length = 0;
+        } else if (buffer_length < USER_INPUT_BUFFER_SIZE) {
+            buffer[buffer_length] = c;
+            buffer_length++;
+        }
+    }
+}
+
 void actual_main(void) {
     my_gpio_init();
 
     // init STDIO
     stdio_init_all();
     // stdio_uart_init_full(uart0, 115200, 4, -1);
+    getchar_timeout_us(0); // disable getchar timeout
 
     // Version info print
     puts("\nBetaBoard");
@@ -103,6 +154,8 @@ void actual_main(void) {
 
     uint32_t last_print = time_us_32();
     uint32_t block_cnt = 0;
+
+    // TODO: run data processing on second core
 
     while (1) {
         // debug print
@@ -126,13 +179,15 @@ void actual_main(void) {
                 }
                 puts("");
             } else {
-                print_timeseries_info((int16_t *)data->samples);
+                // print_timeseries_info((int16_t *)data->samples);
                 print_peaks(data);
             }
 
             delete [] data->samples; // NOTE: Keep me!!
             delete data; // NOTE: Keep me!!
         }
+
+        read_user_input();
 
         if(MAIN_LOOP_BLINK) {
             gpio_put(LED1_PIN, (time_us_32() % 1000000) < 900000);

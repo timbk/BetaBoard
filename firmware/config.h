@@ -18,4 +18,8 @@
 
 #define CONTINUOUS_DUMP false
 
-#define TRIGGER_THRESHOLD -0.045 // [V] 0.055 was the recommendattion for 9V operation
+// #define TRIGGER_THRESHOLD -0.045 // [V] 0.055 was the recommendattion for 9V operation
+#define TRIGGER_THRESHOLD -0.055 // [V] 0.055 was the recommendattion for 9V operation
+
+#define USER_INPUT_BUFFER_SIZE 32
+#define USER_INPUT_COMMIT_CHAR '\r'
