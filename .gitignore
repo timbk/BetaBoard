@@ -1,4 +1,5 @@
 .*.swp
+.*.sw*
 
 *-backups/
 
@@ -9,3 +10,5 @@
 *.log
 
 betaBoard/production/
+
+firmware/version.c

@@ -4,25 +4,48 @@
 #include "hardware/dma.h"
 
 #include "config.h"
-
 #include "fifo.hpp"
 
-static uint adc_dma_channel;
+// data format for every buffer
+struct ADC_DATA_BLOCK {
+    uint64_t timestamp_us_end;
+    uint16_t block_idx;
+    uint16_t *samples;
+};
 
-fifo<uint16_t *> adc_queue(ADC_QUEUE_MAX_SIZE);
-static uint16_t *adc_current_buffer=NULL;
+static uint adc_dma_channel; // The DMA channel that is being used
 
-static bool adc_queue_overflow = false;
+// the queue from which other code will collect the data blocks
+fifo<ADC_DATA_BLOCK *> adc_queue(ADC_QUEUE_MAX_SIZE);
 
+// pointer to keep a record of the buffer currently being used (in priciple it is also in the DMA registers)
+static ADC_DATA_BLOCK *adc_current_buffer=NULL;
+
+static bool adc_queue_overflow = false; // overflow indicator flag
+
+/**
+ * The main ADC DMA handler
+ * Allocates a new buffer and hands it to DMA if the queue is not full
+ * If the queue is full the current buffer is just handed over again and data is lost
+ * The main thread is expected to collect the data
+ */
 void dma_handler() {
+    static uint16_t block_idx = 0;
+
     // Clear the interrupt request.
     dma_hw->ints0 = 1u << adc_dma_channel;
+    block_idx++;
 
-    if(not adc_queue.is_full()) {
+    if(not adc_queue.is_full()) { // swap buffers
         // puts("adc tick");
+        adc_current_buffer->timestamp_us_end = time_us_64();
+        adc_current_buffer->block_idx = block_idx;
+
         adc_queue.push(adc_current_buffer);
-        adc_current_buffer = new uint16_t[ADC_BLOCK_SIZE];
-    } else {
+
+        adc_current_buffer = new ADC_DATA_BLOCK;
+        adc_current_buffer->samples = new uint16_t[ADC_BLOCK_SIZE];
+    } else { // queue is full, data is lost
         // puts("adc queue full");
         // adc_queue.debug();
         if(not adc_queue_overflow) {
@@ -31,7 +54,7 @@ void dma_handler() {
     }
 
     // Kick off the next transfer.
-    dma_channel_set_write_addr(adc_dma_channel, adc_current_buffer, true);
+    dma_channel_set_write_addr(adc_dma_channel, adc_current_buffer->samples, true);
 }
 
 void my_adc_init(void) {
@@ -67,10 +90,11 @@ void my_adc_init(void) {
     // Pace transfers based on availability of ADC samples
     channel_config_set_dreq(&cfg, DREQ_ADC);
 
-    adc_current_buffer = new uint16_t[ADC_BLOCK_SIZE];
+    adc_current_buffer = new ADC_DATA_BLOCK;
+    adc_current_buffer->samples = new uint16_t[ADC_BLOCK_SIZE];
 
     dma_channel_configure(adc_dma_channel, &cfg,
-        adc_current_buffer,    // dst
+        adc_current_buffer->samples,    // dst
         &adc_hw->fifo,  // src
         ADC_BLOCK_SIZE,  // transfer count
         false           // don't start immediately

@@ -32,7 +32,7 @@ void print_timeseries_info(int16_t *data) {
     float min_v = (min*3.3/(float)(1<<12));
     float max_v = (max*3.3/(float)(1<<12));
     // printf("min_v %.3f V\n", min_v);
-    if((min_v < -0.055) or (max_v > 0.055)) {
+    if((min_v < TRIGGER_THRESHOLD) or (max_v > -TRIGGER_THRESHOLD)) {
         printf("%.3f V, min=%.3f V, max=%.3f V %c\n", adc, min*3.3/(1<<12), max*3.3/(1<<12), abs(min)>max ? '-': '+');
     }
     // float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
@@ -40,7 +40,7 @@ void print_timeseries_info(int16_t *data) {
 }
 
 void print_peaks(int16_t *data) {
-    const int16_t threshold = -0.055 * (float)(1<<12) / 3.3;
+    const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
     uint start, stop;
     const uint pre=64, post=128, ignore=64;
 
@@ -60,6 +60,7 @@ void print_peaks(int16_t *data) {
 
 /// A quickly hacked and not well optimized low pass filter (better triggering, replaces baseline correction)
 void lpf(int16_t *array, uint len) {
+    // TODO: replace with an fixed-point version to speed up the calculations!
     // minimalistic impelemntation of a 1 element sos HPF (HPF means a2=b2=0)
     static const float a1=-0.96906742, b0=0.98453371, b1=-0.98453371;
 
@@ -83,7 +84,7 @@ void actual_main(void) {
     // stdio_uart_init_full(uart0, 115200, 4, -1);
 
     // Version info print
-    puts("BetaBoard");
+    puts("\nBetaBoard");
     puts(GIT_COMMIT_HASH);
     puts(COMPILE_DATE);
 
@@ -92,35 +93,37 @@ void actual_main(void) {
     my_adc_init();
     puts("ADC init done");
 
-    bool led_state = true;
     uint32_t last_print = time_us_32();
     uint32_t block_cnt = 0;
 
     while (1) {
+        // debug print
         if((time_us_32() - last_print) > 10e6) {
             // puts("*");
             // adc_queue.debug();
             last_print = time_us_32();
             printf("block_cnt: %lu\n", block_cnt);
         }
+
+        // retrieve and process ADC data
         if(not adc_queue.is_empty()) {
-            int16_t *data = (int16_t*)adc_queue.pop();
+            ADC_DATA_BLOCK *data = (ADC_DATA_BLOCK*)adc_queue.pop();
             block_cnt += 1;
 
-            lpf(data, ADC_BLOCK_SIZE); // TODO: reenable
+            lpf((int16_t *)data->samples, ADC_BLOCK_SIZE);
 
-            if(false) {
+            if(CONTINUOUS_DUMP) {
                 for(uint i=0; i<ADC_BLOCK_SIZE; i+=8) {
-                    printf("%i %i %i %i %i %i %i %i ", data[i], data[i+1], data[i+2], data[i+3], data[i+4], data[i+5], data[i+6], data[i+7]);
+                    printf("%i %i %i %i %i %i %i %i ", data->samples[i], data->samples[i+1], data->samples[i+2], data->samples[i+3], data->samples[i+4], data->samples[i+5], data->samples[i+6], data->samples[i+7]);
                 }
                 puts("");
             } else {
-                // puts("filt:");
-                print_timeseries_info(data);
-                print_peaks(data);
+                print_timeseries_info((int16_t *)data->samples);
+                print_peaks((int16_t *)data->samples);
             }
 
-            delete [] data; // NOTE: Keep me!!
+            delete [] data->samples; // NOTE: Keep me!!
+            delete data; // NOTE: Keep me!!
         }
 
         if(MAIN_LOOP_BLINK) {
