@@ -42,7 +42,7 @@ void print_timeseries_info(int16_t *data) {
 void print_peaks(int16_t *data) {
     const int16_t threshold = -0.055 * (float)(1<<12) / 3.3;
     uint start, stop;
-    const uint pre=64, post=64, ignore=64;
+    const uint pre=64, post=128, ignore=64;
 
     for(uint i=0; i<ADC_BLOCK_SIZE; ++i) {
         if(data[i] < threshold) {
@@ -58,6 +58,7 @@ void print_peaks(int16_t *data) {
     }
 }
 
+/// A quickly hacked and not well optimized low pass filter (better triggering, replaces baseline correction)
 void lpf(int16_t *array, uint len) {
     // minimalistic impelemntation of a 1 element sos HPF (HPF means a2=b2=0)
     static const float a1=-0.96906742, b0=0.98453371, b1=-0.98453371;
@@ -69,7 +70,7 @@ void lpf(int16_t *array, uint len) {
         current_value = array[i] - a1*last_value;
         float tmp = current_value*b0 + last_value*b1;
         // printf("%u %.3f\n", array[i], tmp);
-        array[i] = tmp; 
+        array[i] = tmp;
         last_value = current_value;
     }
 }
@@ -81,23 +82,20 @@ void actual_main(void) {
     stdio_init_all();
     // stdio_uart_init_full(uart0, 115200, 4, -1);
 
+    // Version info print
     puts("BetaBoard");
     puts(GIT_COMMIT_HASH);
     puts(COMPILE_DATE);
 
+    // initialize ADC DMA
     puts("ADC init..");
     my_adc_init();
     puts("ADC init done");
 
-
-    // TODO
-    //  - get continuous read to work properly
-    //  - set up HPF
-    //  - set up trigger mechanism
-    //  - See what we get
     bool led_state = true;
     uint32_t last_print = time_us_32();
     uint32_t block_cnt = 0;
+
     while (1) {
         if((time_us_32() - last_print) > 10e6) {
             // puts("*");
@@ -109,10 +107,9 @@ void actual_main(void) {
             int16_t *data = (int16_t*)adc_queue.pop();
             block_cnt += 1;
 
-            // lpf(data, ADC_BLOCK_SIZE); // TODO: reenable
-            
+            lpf(data, ADC_BLOCK_SIZE); // TODO: reenable
 
-            if(true) {
+            if(false) {
                 for(uint i=0; i<ADC_BLOCK_SIZE; i+=8) {
                     printf("%i %i %i %i %i %i %i %i ", data[i], data[i+1], data[i+2], data[i+3], data[i+4], data[i+5], data[i+6], data[i+7]);
                 }
@@ -126,8 +123,9 @@ void actual_main(void) {
             delete [] data; // NOTE: Keep me!!
         }
 
-        // main loop blink
-        // gpio_put(LED1_PIN, (time_us_32() % 1000000) < 900000);
+        if(MAIN_LOOP_BLINK) {
+            gpio_put(LED1_PIN, (time_us_32() % 1000000) < 900000);
+        }
     }
 }
 
