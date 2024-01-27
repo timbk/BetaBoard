@@ -33,9 +33,7 @@ bool execute_data_dump_hpf = false;
 //////////////////////////////////////////////////
 // functions
 void print_version_info() {
-    puts("BetaBoard");
-    puts(GIT_COMMIT_HASH);
-    puts(COMPILE_DATE);
+    printf("BetaBoard %s %s\n", GIT_COMMIT_HASH, COMPILE_DATE);
 }
 
 void my_gpio_init(void) {
@@ -132,7 +130,7 @@ void handle_user_input(const char *input) {
 
     switch(input[0]) {
         case 'v': // print version info
-            printf("O ");
+            printf("Ov ");
             print_version_info();
             break;
         case 'p': // set pre/post trigger sample count
@@ -160,6 +158,8 @@ void handle_user_input(const char *input) {
             }
             printf("OT %hi\n", settings.trigger_enabled!=0 ? 1 : 0);
             break;
+        case 's':
+            printf("Os %u\n", ADC_ACTUAL_RATE);
         case 'b': // dump one full block of samples
             execute_data_dump_raw = true;
             break;
@@ -191,8 +191,8 @@ void read_user_input() {
     }
 }
 
-void print_data_dump(int16_t *samples) {
-    printf("Ob ");
+void print_data_dump(int16_t *samples, char command_char) {
+    printf("O%c ", command_char);
     for(uint i=0; i<ADC_BLOCK_SIZE; i+=8) {
         printf("%i %i %i %i %i %i %i %i ",
                 samples[i], samples[i+1], samples[i+2], samples[i+3],
@@ -241,14 +241,14 @@ void actual_main(void) {
             block_cnt += 1;
 
             if(execute_data_dump_raw) {
-                print_data_dump((int16_t *)data->samples);
+                print_data_dump((int16_t *)data->samples, 'b');
                 execute_data_dump_raw = false;
             }
 
             lpf((int16_t *)data->samples, ADC_BLOCK_SIZE);
 
             if(execute_data_dump_hpf) {
-                print_data_dump((int16_t *)data->samples);
+                print_data_dump((int16_t *)data->samples, 'B');
                 execute_data_dump_hpf = false;
             }
 
