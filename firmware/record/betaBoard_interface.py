@@ -26,7 +26,7 @@ class betaBoard:
                 break
             self.response_queue.append(response)
 
-    def _execute_command(self, command_char, params=[], ignore_response=False):
+    def _execute_command(self, command_char, params=[], ignore_response=False, timeout=None):
         """
             Internal macro that sends a command to the device and optionally collects the response
             command_char: The command character. Example: 'v' to retrieve the version
@@ -46,6 +46,10 @@ class betaBoard:
 
         # receive response if expected
         if not ignore_response:
+            if timeout is not None:
+                old_timeout = self.conn.timeout
+                self.conn.timeout = timeout
+
             while True:
                 response = self.conn.readline().decode()
                 if len(response) == 0:
@@ -60,6 +64,9 @@ class betaBoard:
                     continue
 
                 return response[3:]
+
+            if timeout is not None:
+                self.conn.timeout = old_timeout
 
     def get_version(self):
         return self._execute_command('v')
@@ -133,7 +140,7 @@ class betaBoard:
             filtered: Set to false to get the values before the high pass filter
             returns: numpy array of samples in ADC counts
         """
-        response = self._execute_command('B' if filtered else 'b')
+        response = self._execute_command('B' if filtered else 'b', timeout=4)
         try:
             samples = response.split(' ')[:-1]
             samples = np.fromiter(map(int, samples), dtype=np.int16)
@@ -159,7 +166,9 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         using_plotext = False
 
-    bb = betaBoard(sys.argv[1]) 
+    SR = 200e3
+
+    bb = betaBoard(sys.argv[1])
 
     samples = []
     N = 4
@@ -171,8 +180,17 @@ if __name__ == '__main__':
 
     bin_edges, hist= np.histogram(samples, bins=40)
 
+    plt.plot_size(height=20)
     plt.plot(hist, bin_edges)
     plt.xlabel('Amp output [V]')
+    plt.show()
+
+    if using_plotext:
+        plt.clear_figure()
+
+    plt.plot_size(height=20)
+    plt.plot(np.arange(len(samples))/SR, samples)
+    plt.ylabel('Amp output [V]')
     plt.show()
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')
