@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "betaBoard")(type "KiCad")(uri "/Users/tim/git/BetaBoard/betaBoard.pretty")(options "")(descr ""))
+)

@@ -12,3 +12,4 @@
 betaBoard/production/
 
 firmware/version.c
+.DS_store
