@@ -83,3 +83,11 @@ Challenges:
 * Keep loop areas even smaller (I don't think it's the source of issues, but would feel better)
 * USB port shielding is connected to GND. This might not be the optimal solution
     * Next: Add 2 0603 footprints? (allows open, short, 1MOhm+C)
+
+## Noise calculations
+
+* Spice simulation: peak of ca. 40 uV/$\sqrt{}$Hz
+    * Resistor thermal noise: $\sqrt{4k_BTR}\approx 400 ~ \text{nV/}\sqrt{}\text{Hz}$
+    * LM358 input noise is ca. 40 nv/$\sqrt{}$Hz
+    * Gain of second stage is ca. 100 for the peak frequency
+    * => Resistor thermal noise is dominant part in simulation, LM385 noise should be negligible
