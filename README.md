@@ -98,7 +98,5 @@ Challenges:
 ## Potential signal sources
 
 * 10g KCl has ca. 164 Bq.
-* Estimate of geometric acceptency at 2 cm distance: $A = \frac{4 \cdot 7.5~\text{mm}^2} {4\pi\cdot (20~\text{mm})^2} \approx 0.6\%$
+* Estimate of geometric acceptency at 2 cm distance: $A = \frac{4 \cdot 7.5~\text{mm}^2} {4\pi\cdot (20~\text{mm})^2} \approx 0.006$
     * With perfect efficiency: ca. 1 Hz
-
-
