@@ -10,8 +10,8 @@ project(betaBoard)
 pico_sdk_init()
 
 add_executable(betaBoard
-    main.cpp
-    version.c
+    src/main.cpp
+    src/version.c
 )
 
 target_compile_options(betaBoard PRIVATE -Wall ) # These all throw too many warning from SDK: -Wpedantic -Werror -Wextra

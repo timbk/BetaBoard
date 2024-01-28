@@ -11,5 +11,5 @@
 
 betaBoard/production/
 
-firmware/version.c
+firmware/src/version.c
 .DS_store

@@ -86,12 +86,12 @@ Challenges:
 
 ## Noise calculations
 
-* Spice simulation: peak of ca. 40 $\text{\mu V}/\sqrt{\text{Hz}}$
+* Spice simulation: peak of ca. 40 $\mu\text{V}/\sqrt{\text{Hz}}$
     * Resistor thermal noise: $\sqrt{4k_BTR}\approx 400 ~ \text{nV/}\sqrt{\text{Hz}}$
     * LM358 input noise is ca. 40 $\text{nV}/\sqrt{\text{Hz}}$
     * Gain of second stage is ca. 100 for the peak frequency
     * => Resistor thermal noise is dominant part in simulation, LM385 noise should be negligible
-        * $100 \cdot 400~\text{nV}/\sqrt{\text{Hz}} \approx 40~\text{\mu V}/\sqrt{\text{Hz}}$
+        * $100 \cdot 400~\text{nV}/\sqrt{\text{Hz}} \approx 40~\mu\text{V}/\sqrt{\text{Hz}}$
 
 ![Noise plot](other/img/noise_level_analysis.png)
 
