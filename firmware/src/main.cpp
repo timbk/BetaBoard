@@ -30,7 +30,7 @@ bool execute_data_dump_hpf = false;
 
 //////////////////////////////////////////////////
 // functions
-void print_version_info() {
+inline void print_version_info() {
     printf("BetaBoard %s %s\n", GIT_COMMIT_HASH, COMPILE_DATE);
 }
 
@@ -41,63 +41,76 @@ void my_gpio_init(void) {
     gpio_put(LED1_PIN, 0);
 }
 
-/*
-void print_timeseries_info(int16_t *data) {
-    int32_t sum = 0;
-    int16_t min=0x7FFF, max=-0x7FFF;
-    for(uint i=0; i<ADC_BLOCK_SIZE; ++i) {
-        int16_t sample = data[i];
-        sum += sample;
-        if(sample < min)
-            min = sample;
-        if(sample > max)
-            max = sample;
-    }
-
-    float adc = (float) sum * 3.3 / (1<<12) / ADC_BLOCK_SIZE;
-    float min_v = (min*3.3/(float)(1<<12));
-    float max_v = (max*3.3/(float)(1<<12));
-    // printf("min_v %.3f V\n", min_v);
-    if((min_v < TRIGGER_THRESHOLD) or (max_v > -TRIGGER_THRESHOLD)) {
-        printf("%.3f V, min=%.3f V, max=%.3f V %c\n", adc, min*3.3/(1<<12), max*3.3/(1<<12), abs(min)>max ? '-': '+');
-    }
-    // float tempC = 27.0f - (adc - 0.706f) / 0.001721f;
-    // printf("%.2f C\n", tempC);
-}
-*/
-
 void print_peaks(ADC_DATA_BLOCK *data_block) {
-    // const int16_t threshold = TRIGGER_THRESHOLD * (float)(1<<12) / 3.3;
     uint start, stop;
-    // const uint pre=64, post=128, ignore=64;
-
     int16_t *data = (int16_t *)data_block->samples;
+    static uint16_t trigger_counter = 0;
 
+    static int16_t leftover_samples[ADC_LEFTOVER_SIZE];
+
+    static bool pending_trigger = false;
+    static uint64_t pending_trigger_timestamp;
+    static uint pending_trigger_samples_left;
+
+    if(pending_trigger) {
+        pending_trigger = false;
+
+        printf("OT %u %llu %u %u 1 # ", data_block->block_idx-1, pending_trigger_timestamp, adc_queue_overflow, trigger_counter);
+        adc_queue_overflow = false;
+        trigger_counter += 1;
+
+        for(uint j=(ADC_LEFTOVER_SIZE-pending_trigger_samples_left); j<ADC_LEFTOVER_SIZE; ++j) {
+            printf("%i ", leftover_samples[j]);
+        }
+        for(uint j=0; j<(settings.samples_pre+settings.samples_post-pending_trigger_samples_left); ++j) {
+            printf("%i ", leftover_samples[j]);
+        }
+        puts("");
+    }
+
+    // TODO: check all the code for off-by-ones that would lead to slightly different waveform lengths
     for(uint i=0; i<ADC_BLOCK_SIZE; ++i) {
         if(data[i] < settings.trigger_threshold) {
-            // TODO: keep last waveform to grab samples from it if the trigger was on the edge
-            // TODO: handle triggers at the very end of a sample block
-            start = (i >= settings.samples_pre) ? i-settings.samples_pre : 0;
-            stop = (i <= (ADC_BLOCK_SIZE-settings.samples_post)) ? i+settings.samples_post : ADC_BLOCK_SIZE;
-
             uint64_t timestamp = data_block->timestamp_us_end - ((ADC_BLOCK_SIZE-i)*1000000/ADC_ACTUAL_RATE);
 
-            printf("OT %u %llu %u # ", data_block->block_idx, timestamp, adc_queue_overflow);
-            adc_queue_overflow = false;
+            if((ADC_BLOCK_SIZE - i) < settings.samples_post) {
+                pending_trigger = true;
+                pending_trigger_timestamp = timestamp;
+                pending_trigger_samples_left = ADC_BLOCK_SIZE - i + settings.samples_pre;
+                break;
+            }
+
+            printf("OT %u %llu %u %u 0 # ", data_block->block_idx, timestamp, adc_queue_overflow, trigger_counter);
+
+            // print samples from leftover buffer if trigger was very close to block start
+            if(i < settings.samples_pre) {
+                for(uint j=(ADC_LEFTOVER_SIZE - 1 - settings.samples_pre + i); j<ADC_LEFTOVER_SIZE; ++j) {
+                    printf("%i ", leftover_samples[j]);
+                }
+            }
+
+            start = (i >= settings.samples_pre) ? i-settings.samples_pre : 0;
+            stop = (i <= (ADC_BLOCK_SIZE-settings.samples_post)) ? i+settings.samples_post : ADC_BLOCK_SIZE;
 
             for(uint j=start; j<stop; ++j) {
                 printf("%i ", data[j]);
             }
             puts("");
 
+            adc_queue_overflow = false;
             i += settings.trigger_ignore; // skip the next few samples to prevent retriggering
+            trigger_counter += 1;
         }
+    }
+
+    // keep last few samples to correctly handle triggers on sample block edges
+    for(uint i=0; i<ADC_LEFTOVER_SIZE; ++i) {
+        leftover_samples[i] = data[ADC_BLOCK_SIZE - ADC_LEFTOVER_SIZE - 1 + i];
     }
 }
 
 /// A quickly hacked and not well optimized high pass filter (better triggering, replaces baseline correction)
 inline void hpf(int16_t *array, uint len) {
-    // TODO: replace with an fixed-point version to speed up the calculations!
     // minimalistic impelemntation of a 1 element sos HPF (HPF means a2=b2=0)
     static const float a1=-0.96906742, b0=0.98453371, b1=-0.98453371;
 
@@ -113,19 +126,17 @@ inline void hpf(int16_t *array, uint len) {
     }
 }
 
+// NOTE: This implementation uses static variables. Can only be used for one datastream in this implementation!
 inline void hpf_discrete(int16_t *array, uint len) {
     // 0.01 relative frequency HPF
     // int32_t a0 = 65536, a1 = -63508, b0 = 64522, b1 = -64522; // 0.01 f_c/f_0 (for 200 kSps operation)
     int32_t a0 = 65536, a1 = -65125, b0 = 65330, b1 = -65330; // 0.002 f_c/f_0 (for 500 kSps operation)
     static int32_t last_x=0, last_y=0;
 
-    int32_t y;
     for(uint i=0; i<len; ++i) {
-        // TODO: last_y variable could be eliminated, but reduces readability
-        y = (b0*array[i] + b1*last_x - a1*last_y) / a0;
+        last_y = (b0*array[i] + b1*last_x - a1*last_y) / a0;
         last_x = array[i];
-        last_y = y;
-        array[i] = y;
+        array[i] = last_y;
     }
 }
 

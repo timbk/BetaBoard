@@ -15,6 +15,7 @@
 // ADC buffer settings
 #define ADC_BLOCK_SIZE (1024*20) // Buffer size, Brackets are important!!
 #define ADC_QUEUE_MAX_SIZE 2 // buffer count
+#define ADC_LEFTOVER_SIZE (64+128) // amount of samples that are stored to get full waveform readouts for triggers close to the block edge
 
 // #define TRIGGER_THRESHOLD -0.045 // [V] 0.055 was the recommendattion for 9V operation
 // #define TRIGGER_THRESHOLD -0.055 // [V] 0.055 was the recommendattion for 9V operation
