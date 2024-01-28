@@ -4,7 +4,7 @@ import numpy as np
 class betaBoard:
     ADCC_TO_V = 3.3 / 2**12
 
-    def __init__(self, device:str):
+    def __init__(self, device:str, timeout=0.01):
         """
             Constructor
             device: (str) Address of the USB serial device
@@ -13,7 +13,8 @@ class betaBoard:
                 Windows: 'COMX'
                 X = Random number
         """
-        self.conn = serial.Serial(device, timeout=0.01)
+        self.timeout = timeout
+        self.conn = serial.Serial(device, timeout=timeout)
         self.pulses = []
 
         self.response_queue = []
@@ -45,13 +46,20 @@ class betaBoard:
                 continue
         self.response_queue = []
 
-    def read_messages(self):
-        ''' clear input buffer '''
+    def _clear(self):
+        self.conn.timeout = 0.001
+
         while True:
             response = self.conn.readline()
             if len(response) == 0:
                 break
             self.response_queue.append(response.decode())
+
+        self.conn.timeout = self.timeout
+
+    def read_messages(self):
+        ''' clear input buffer '''
+        self._clear()
         self._parse_queue()
 
     def _execute_command(self, command_char, params=[], ignore_response=False, timeout=None):
@@ -63,7 +71,7 @@ class betaBoard:
         """
         assert type(command_char)==str and len(command_char)==1, "command must be a single character"
 
-        self.read_messages()
+        self._clear()
 
         # send command
         for p in params:
@@ -75,7 +83,6 @@ class betaBoard:
         # receive response if expected
         if not ignore_response:
             if timeout is not None:
-                old_timeout = self.conn.timeout
                 self.conn.timeout = timeout
 
             while True:
@@ -93,11 +100,10 @@ class betaBoard:
 
                 return response[3:]
 
-            if timeout is not None:
-                self.conn.timeout = old_timeout
+            self.conn.timeout = self.timeout
 
     def get_version(self):
-        return self._execute_command('v')
+        return self._execute_command('v')[:-2]
 
     def get_waveform_length(self, _set_values=[]):
         """
@@ -186,7 +192,7 @@ class betaBoard:
         return value
 
 if __name__ == '__main__':
-    import sys
+    import sys, time
     from scipy.signal import welch
     try:
         import plotext as plt
@@ -237,7 +243,7 @@ if __name__ == '__main__':
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')
 
-    bb.set_threshold(-45)
+    bb.set_threshold(-48)
     while True:
         bb.read_messages()
 
