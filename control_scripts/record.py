@@ -43,15 +43,15 @@ bb.set_threshold(THRESHOLD)
 while True:
     bb.read_messages()
 
-    for block_idx, timestamp, overflow, waveform in bb.pulses:
+    for block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger in bb.pulses:
         print()
         print(f'time={timestamp*1e-6:.6f}s overflow={overflow}')
 
         # TODO: fixme; This is only a hack while the firmware does not guarantee fixed length waveforms yet
-        if len(waveform) < pre+post:
-            waveform = np.array( list(waveform) + list(np.zeros(pre + post - len(waveform))) )
+        # if len(waveform) < pre+post:
+        #     waveform = np.array( list(waveform) + list(np.zeros(pre + post - len(waveform))) )
 
-        csv_line = f'{block_idx}, {timestamp}, {int(overflow)}, {", ".join(map(str, waveform))} \n'
+        csv_line = f'{block_idx},{timestamp},{int(overflow)},{trigger_counter},{",".join(map(str, waveform))}\n'
         f.write(csv_line)
         f.flush()
 

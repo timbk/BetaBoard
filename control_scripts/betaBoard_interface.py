@@ -29,20 +29,24 @@ class betaBoard:
             if entry[0] != 'OT':
                 print(f'Warning: Unexpected message start: {repr(entry[0])}')
                 continue
-            if entry[4] != '#':
-                print(f'Warning: Could not find \'#\' at index 4 of OT trigger message')
+            if entry[6] != '#':
+                print(f'Warning: Could not find \'#\' at index 6 of OT trigger message')
                 continue
 
             try:
                 block_idx = int(entry[1])
                 timestamp = int(entry[2])
                 overflow = bool(int(entry[3]))
-                waveform = np.array([int(i) for i in entry[5:-1]])
+                trigger_counter = int(entry[4])
+                block_edge_trigger = bool(int(entry[5]))
+                waveform = np.array([int(i) for i in entry[7:-1]])
 
-                new_data = (block_idx, timestamp, overflow, waveform)
+                new_data = (block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger)
                 self.pulses.append(new_data)
-            except:
+            except Exception as e:
                 print(f'Warning: Could not parse integers in OT trigger message')
+                print(e)
+                print(repr(entry))
                 continue
         self.response_queue = []
 
@@ -243,7 +247,7 @@ if __name__ == '__main__':
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')
 
-    bb.set_threshold(-48)
+    bb.set_threshold(-52)
     while True:
         bb.read_messages()
 
