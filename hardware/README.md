@@ -19,7 +19,7 @@ Design concepts:
 * Allow options for different diode placement
     * More diodes yield more sensitivity
 
-![PCB first LED blinking](other/img/hello_world.gif)
+![PCB first LED blinking](../other/img/hello_world.gif)
 
 Good:
 * MCU, buttons, USB etc work perfectly out of the box :D

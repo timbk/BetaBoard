@@ -1,3 +1,5 @@
+![Build status](https://github.com/timbk/BetaBoard/actions/workflows/build_test.yml/badge.svg)
+
 # BetaBoard
 
 A particle detector built for cost-effectiveness when ordered at O(100) pieces.

@@ -9,8 +9,6 @@
 #include "config.h" // compile time configuration options
 #include "adc_dma.hpp"
 
-#include "class/cdc/cdc_device.h"
-
 //////////////////////////////////////////////////
 // global variables
 struct SETTINGS {
