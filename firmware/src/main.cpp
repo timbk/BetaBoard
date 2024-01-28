@@ -95,8 +95,8 @@ void print_peaks(ADC_DATA_BLOCK *data_block) {
     }
 }
 
-/// A quickly hacked and not well optimized low pass filter (better triggering, replaces baseline correction)
-void lpf(int16_t *array, uint len) {
+/// A quickly hacked and not well optimized high pass filter (better triggering, replaces baseline correction)
+inline void hpf(int16_t *array, uint len) {
     // TODO: replace with an fixed-point version to speed up the calculations!
     // minimalistic impelemntation of a 1 element sos HPF (HPF means a2=b2=0)
     static const float a1=-0.96906742, b0=0.98453371, b1=-0.98453371;
@@ -111,6 +111,44 @@ void lpf(int16_t *array, uint len) {
         array[i] = tmp;
         last_value = current_value;
     }
+}
+
+inline void hpf_discrete(int16_t *array, uint len) {
+    // 0.01 relative frequency HPF
+    // int32_t a0 = 65536, a1 = -63508, b0 = 64522, b1 = -64522; // 0.01 f_c/f_0 (for 200 kSps operation)
+    int32_t a0 = 65536, a1 = -65125, b0 = 65330, b1 = -65330; // 0.002 f_c/f_0 (for 500 kSps operation)
+    static int32_t last_x=0, last_y=0;
+
+    int32_t y;
+    for(uint i=0; i<len; ++i) {
+        // TODO: last_y variable could be eliminated, but reduces readability
+        y = (b0*array[i] + b1*last_x - a1*last_y) / a0;
+        last_x = array[i];
+        last_y = y;
+        array[i] = y;
+    }
+}
+
+void benchmark_hpf() {
+    int16_t *buf = new int16_t[BENCHMARK_BUFFER_SIZE];
+    int64_t start, stop;
+    uint i;
+
+    start = time_us_64();
+    for(i=0; i<BENCHMARK_REPITITIONS; ++i) {
+        hpf(buf, BENCHMARK_BUFFER_SIZE);
+    }
+    stop = time_us_64();
+    printf("Floating point HPF: \t%.6f s (%.3lf us/sample)\n", (stop-start)*1e-6, (double)(stop-start)/(double)BENCHMARK_REPITITIONS/BENCHMARK_BUFFER_SIZE);
+
+    start = time_us_64();
+    for(i=0; i<BENCHMARK_REPITITIONS; ++i) {
+        hpf_discrete(buf, BENCHMARK_BUFFER_SIZE);
+    }
+    stop = time_us_64();
+    printf("Fixed point HPF: \t%.6f s (%.3lf us/sample)\n", (stop-start)*1e-6, (double)(stop-start)/(double)BENCHMARK_REPITITIONS/BENCHMARK_BUFFER_SIZE);
+
+    delete [] buf;
 }
 
 static const char help_msg[] = "O Usage:\n"
@@ -167,6 +205,10 @@ void handle_user_input(const char *input) {
         case 'h': // help message
             puts(help_msg);
             break;
+        case 'P': // dev tool to benchmark high pass filter speed
+            puts("O benchmarking");
+            benchmark_hpf();
+            break;
         default:
             puts("E Unknown command");
     }
@@ -219,20 +261,9 @@ void actual_main(void) {
     my_adc_init();
     puts("ADC init done");
 
-    uint32_t last_print = time_us_32();
+    // TODO: run data processing on second core ?
     uint32_t block_cnt = 0;
-
-    // TODO: run data processing on second core
-
     while (1) {
-        // debug print
-        /*if((time_us_32() - last_print) > 10e6) {
-            // puts("*");
-            // adc_queue.debug();
-            last_print = time_us_32();
-            printf("block_cnt: %lu\n", block_cnt);
-        }*/
-
         // retrieve and process ADC data
         if(not adc_queue.is_empty()) {
             ADC_DATA_BLOCK *data = (ADC_DATA_BLOCK*)adc_queue.pop();
@@ -243,7 +274,7 @@ void actual_main(void) {
                 execute_data_dump_raw = false;
             }
 
-            lpf((int16_t *)data->samples, ADC_BLOCK_SIZE);
+            hpf_discrete((int16_t *)data->samples, ADC_BLOCK_SIZE);
 
             if(execute_data_dump_hpf) {
                 print_data_dump((int16_t *)data->samples, 'B');

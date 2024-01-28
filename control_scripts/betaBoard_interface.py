@@ -13,7 +13,7 @@ class betaBoard:
                 Windows: 'COMX'
                 X = Random number
         """
-        self.conn = serial.Serial(device, timeout=0.1)
+        self.conn = serial.Serial(device, timeout=0.01)
         self.pulses = []
 
         self.response_queue = []
@@ -43,8 +43,6 @@ class betaBoard:
             except:
                 print(f'Warning: Could not parse integers in OT trigger message')
                 continue
-
-
         self.response_queue = []
 
     def read_messages(self):
@@ -189,6 +187,7 @@ class betaBoard:
 
 if __name__ == '__main__':
     import sys
+    from scipy.signal import welch
     try:
         import plotext as plt
         using_plotext = True
@@ -221,6 +220,19 @@ if __name__ == '__main__':
     plt.plot_size(height=20)
     plt.plot(np.arange(len(samples))/SR, samples)
     plt.ylabel('Amp output [V]')
+    plt.xlabel('Time [s]')
+    plt.show()
+
+    if using_plotext:
+        plt.clear_figure()
+
+    plt.plot_size(height=20)
+    f, S = welch(samples, fs=SR, nperseg=len(samples))
+    plt.plot(f[1:], S[1:])
+    plt.xlabel('Frequency [Hz]')
+    plt.ylabel('Amp output [V]')
+    plt.yscale('log')
+    plt.xscale('log')
     plt.show()
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')

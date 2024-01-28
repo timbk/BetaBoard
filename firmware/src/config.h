@@ -8,7 +8,7 @@
 #define DEFAULT_ADC_CHANNEL 2
 
 // ADC rate config
-#define ADC_RATE 200000 // ADC sample rate
+#define ADC_RATE 500000 // ADC sample rate
 #define ADC_CLOCK_DIV (48000000 / ADC_RATE - 1) // clock divider value, Brackets are important!
 #define ADC_ACTUAL_RATE (48000000 / (ADC_CLOCK_DIV + 1)) // actual sample rate
 
@@ -21,3 +21,6 @@
 
 #define USER_INPUT_BUFFER_SIZE 32
 #define USER_INPUT_COMMIT_CHAR '\r'
+
+#define BENCHMARK_BUFFER_SIZE (1024*8)
+#define BENCHMARK_REPITITIONS 16
