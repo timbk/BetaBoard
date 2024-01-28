@@ -84,7 +84,7 @@ void print_peaks(ADC_DATA_BLOCK *data_block) {
 
             // print samples from leftover buffer if trigger was very close to block start
             if(i < settings.samples_pre) {
-                for(uint j=(ADC_LEFTOVER_SIZE - 1 - settings.samples_pre + i); j<ADC_LEFTOVER_SIZE; ++j) {
+                for(uint j=(ADC_LEFTOVER_SIZE - settings.samples_pre + i); j<ADC_LEFTOVER_SIZE; ++j) {
                     printf("%i ", leftover_samples[j]);
                 }
             }
