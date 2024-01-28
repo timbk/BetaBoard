@@ -2,7 +2,7 @@
 
 ## Build instructions
 
-Requires a working installation of the `pico sdk`.
+Requires a working installation of the [pico sdk](https://github.com/raspberrypi/pico-sdk).
 
 ```bash
 cd firmware/
