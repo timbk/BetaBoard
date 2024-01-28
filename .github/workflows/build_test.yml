@@ -1,0 +1,29 @@
+name: Build
+on: [push]
+jobs:
+  build-test-code:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install pico-sdk dependencies
+        run: sudo apt install cmake gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: get pico-sdk
+        run:  git clone --depth 1 https://github.com/raspberrypi/pico-sdk.git
+
+      - name: build
+        run: export PICO_SDK_PATH=`pwd`/pico-sdk; cd firmware; ./make.sh
+
+      - name: Artifact ELF
+        uses: actions/upload-artifact@v3
+        with:
+          name: RP2040 firmware ELF
+          path: firmware/build/betaBoard.elf
+
+      - name: Artifact UF2
+        uses: actions/upload-artifact@v3
+        with:
+          name: RP2040 firmware UF2
+          path: firmware/build/betaBoard.uf2
