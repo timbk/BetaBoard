@@ -17,14 +17,44 @@ class betaBoard:
         self.pulses = []
 
         self.response_queue = []
+        self.pulses = []
 
-    def _clear(self):
+    def _parse_queue(self):
+        ''' parse messages in the response queue (not matched to any request) '''
+        # for now: all messages are triggers
+        for entry in self.response_queue:
+            entry = entry.split(' ')
+
+            if entry[0] != 'OT':
+                print(f'Warning: Unexpected message start: {repr(entry[0])}')
+                continue
+            if entry[4] != '#':
+                print(f'Warning: Could not find \'#\' at index 4 of OT trigger message')
+                continue
+
+            try:
+                block_idx = int(entry[1])
+                timestamp = int(entry[2])
+                overflow = bool(int(entry[3]))
+                waveform = np.array([int(i) for i in entry[5:-1]])
+
+                new_data = (block_idx, timestamp, overflow, waveform)
+                self.pulses.append(new_data)
+            except:
+                print(f'Warning: Could not parse integers in OT trigger message')
+                continue
+
+
+        self.response_queue = []
+
+    def read_messages(self):
         ''' clear input buffer '''
         while True:
             response = self.conn.readline()
             if len(response) == 0:
                 break
-            self.response_queue.append(response)
+            self.response_queue.append(response.decode())
+        self._parse_queue()
 
     def _execute_command(self, command_char, params=[], ignore_response=False, timeout=None):
         """
@@ -35,7 +65,7 @@ class betaBoard:
         """
         assert type(command_char)==str and len(command_char)==1, "command must be a single character"
 
-        self._clear()
+        self.read_messages()
 
         # send command
         for p in params:
@@ -166,12 +196,12 @@ if __name__ == '__main__':
         import matplotlib.pyplot as plt
         using_plotext = False
 
-    SR = 200e3
-
     bb = betaBoard(sys.argv[1])
+    SR = bb.get_sample_rate()
+    print(f'sample rate: {SR} Hz')
 
     samples = []
-    N = 4
+    N = 1
     for i in range(N):
         print(f'{i} / {N}', end='\r')
         samples.append( bb.get_data_dump(False) * bb.ADCC_TO_V )
@@ -194,3 +224,18 @@ if __name__ == '__main__':
     plt.show()
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')
+
+    bb.set_threshold(-45)
+    while True:
+        bb.read_messages()
+
+        for block_idx, timestamp, overflow, waveform in bb.pulses:
+            print()
+            print(f'time={timestamp*1e-6:.6f}s overflow={overflow}')
+
+            plt.clear_figure()
+            plt.plot_size(height=15)
+            plt.plot(waveform * bb.ADCC_TO_V)
+            plt.show()
+
+        bb.pulses = []
