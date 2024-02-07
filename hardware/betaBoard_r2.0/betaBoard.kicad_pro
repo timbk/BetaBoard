@@ -46,7 +46,7 @@
         "silk_text_upright": false,
         "zones": {
           "45_degree_only": false,
-          "min_clearance": 0.508
+          "min_clearance": 0.6
         }
       },
       "diff_pair_dimensions": [
@@ -471,6 +471,10 @@
       {
         "netclass": "PWR",
         "pattern": "VCC"
+      },
+      {
+        "netclass": "PWR",
+        "pattern": "5V_USB"
       }
     ]
   },
@@ -539,20 +543,12 @@
       "MCU"
     ],
     [
-      "1d31b165-afd9-4178-8caf-a7fc7b259f97",
-      "particle_sensor_array"
-    ],
-    [
       "a19c94be-85f2-45d0-b8ae-fe772296c136",
       "particle_sensor_array1"
     ],
     [
-      "cd42d678-88a0-4889-b461-e4aa141e3c58",
-      "particle_sensor_array2"
-    ],
-    [
-      "617ca541-d0cd-4a41-a58b-d194673edcc6",
-      "particle_sensor_array3"
+      "04257380-b0d3-4dec-9d7c-5e99e8454005",
+      "Frontend Alpha"
     ]
   ],
   "text_variables": {}

@@ -5,6 +5,8 @@
 
 */fp-info-cache
 */fp-lib-table
+fp-info-cache
+fp-lib-table
 
 *.kicad_prl
 *.log
