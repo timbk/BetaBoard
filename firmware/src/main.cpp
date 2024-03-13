@@ -130,7 +130,8 @@ inline void hpf(int16_t *array, uint len) {
 inline void hpf_discrete(int16_t *array, uint len) {
     // 0.01 relative frequency HPF
     // int32_t a0 = 65536, a1 = -63508, b0 = 64522, b1 = -64522; // 0.01 f_c/f_0 (for 200 kSps operation)
-    int32_t a0 = 65536, a1 = -65125, b0 = 65330, b1 = -65330; // 0.002 f_c/f_0 (for 500 kSps operation)
+    // int32_t a0 = 65536, a1 = -65125, b0 = 65330, b1 = -65330; // 0.002 f_c/f_0 (for 500 kSps operation)
+    int32_t a0 = 65536, a1 = -61542, b0 = 63539, b1 = -63539; // experimental 0.02 f_c/f_0 (for 500 kSps operation)
     static int32_t last_x=0, last_y=0;
 
     for(uint i=0; i<len; ++i) {
@@ -220,6 +221,7 @@ void handle_user_input(const char *input) {
             puts("O benchmarking");
             benchmark_hpf();
             break;
+        // TODO: channel selection
         default:
             puts("E Unknown command");
     }
