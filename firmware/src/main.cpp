@@ -15,6 +15,7 @@ struct SETTINGS {
     int16_t trigger_threshold;
     uint samples_pre, samples_post, trigger_ignore;
     bool trigger_enabled;
+    uint8_t adc_channel;
 };
 
 SETTINGS settings = {
@@ -23,6 +24,7 @@ SETTINGS settings = {
     128, // post
     64,  // trigger_ignore
     true, // trigger_neabled
+    DEFAULT_ADC_CHANNEL, // adc channel
 };
 
 bool execute_data_dump_raw = false;
@@ -172,6 +174,7 @@ static const char help_msg[] = "O Usage:\n"
                                "\tv: print firmware version info\n"
                                "\tb: dump one block of samples of raw values\n"
                                "\tB: dump one block of samples after the high pass filter\n"
+                               "\tc <channel>: select/get adc channel (0..3)\n"
                                ;
 void handle_user_input(const char *input) {
     uint16_t p1, p2;
@@ -221,7 +224,17 @@ void handle_user_input(const char *input) {
             puts("O benchmarking");
             benchmark_hpf();
             break;
-        // TODO: channel selection
+        case 'c': // adc channel selection
+            if(sscanf(input, "c %hu", &p1) >= 1) {
+                if(p1 >= 4) {
+                    puts("E ADC channel must be in 0..3");
+                    return;
+                }
+                settings.adc_channel = p1;
+                adc_select_input(settings.adc_channel);
+            }
+            printf("Oc %u\n", settings.adc_channel);
+            break;
         default:
             puts("E Unknown command");
     }
