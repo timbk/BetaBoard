@@ -27,6 +27,7 @@ target_link_libraries(betaBoard PRIVATE
     # hardware_i2c # for configuring the DAC
     # hardware_pwm # for clocking the ADC
     hardware_adc # For RP2040 internal temperature sensor
+    hardware_flash
 )
 pico_add_extra_outputs(betaBoard)
 

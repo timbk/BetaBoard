@@ -4,6 +4,7 @@
 
 // Pico
 #include "pico/stdlib.h"
+#include "hardware/flash.h"
 
 #include "version.h"
 #include "config.h" // compile time configuration options
@@ -178,6 +179,7 @@ static const char help_msg[] = "O Usage:\n"
                                "\tB: dump one block of samples after the high pass filter\n"
                                "\tc <channel>: select/get adc channel (0..3)\n"
                                "\tl <enabled>: enable/disable blinking led\n"
+                               "\tu: get unique board id\n"
                                ;
 void handle_user_input(const char *input) {
     uint16_t p1, p2;
@@ -246,6 +248,15 @@ void handle_user_input(const char *input) {
                 }
             }
             printf("Ol %hi\n", settings.main_loop_blink_enabled!=0 ? 1 : 0);
+            break;
+        case 'u': // help message
+            uint8_t uid[8];
+            flash_get_unique_id(uid);
+            printf("Ou ");
+            for(uint8_t i=0; i<8; ++i) {
+                printf("%02X", uid[i]);
+            }
+            puts("");
             break;
         default:
             puts("E Unknown command");
