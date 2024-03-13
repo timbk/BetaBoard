@@ -50,7 +50,7 @@ class betaBoard:
                 continue
         self.response_queue = []
 
-    def _clear(self):
+    def _clear(self, max_queue_size=None):
         self.conn.timeout = 0.001
 
         while True:
@@ -59,11 +59,14 @@ class betaBoard:
                 break
             self.response_queue.append(response.decode())
 
+            if max_queue_size is not None and len(self.response_queue) > max_queue_size:
+                break
+
         self.conn.timeout = self.timeout
 
     def read_messages(self):
         ''' clear input buffer '''
-        self._clear()
+        self._clear(10)
         self._parse_queue()
 
     def _execute_command(self, command_char, params=[], ignore_response=False, timeout=None):
@@ -217,43 +220,67 @@ if __name__ == '__main__':
     print()
     samples = np.array(samples).flatten()
 
-    bin_edges, hist= np.histogram(samples, bins=40)
+    hist, bin_edges = np.histogram(samples, bins=40)
 
-    plt.plot_size(height=20)
-    plt.plot(hist, bin_edges)
+    if using_plotext:
+        plt.plot_size(height=20)
+    plt.plot(hist, bin_edges[:-1])
     plt.xlabel('Amp output [V]')
     plt.show()
 
     if using_plotext:
         plt.clear_figure()
+        plt.plot_size(height=20)
 
-    plt.plot_size(height=20)
     plt.plot(np.arange(len(samples))/SR, samples)
     plt.ylabel('Amp output [V]')
     plt.xlabel('Time [s]')
     plt.show()
 
-    if using_plotext:
-        plt.clear_figure()
-
-    plt.plot_size(height=20)
     f, S = welch(samples, fs=SR, nperseg=len(samples))
-    plt.plot(f[1:], S[1:])
-    plt.xlabel('Frequency [Hz]')
-    plt.ylabel('Amp output [V]')
-    plt.yscale('log')
-    plt.xscale('log')
-    plt.show()
+    for do_log in range(1):
+        if using_plotext:
+            plt.clear_figure()
+            plt.plot_size(height=20)
+
+        plt.plot(f[1:], S[1:])
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Amp output [V]')
+        if do_log:
+            plt.yscale('log')
+            plt.xscale('log')
+        plt.show()
+
+    if True:
+        if using_plotext:
+            plt.clear_figure()
+            plt.plot_size(height=20)
+
+        plt.plot(f[1:], S[1:])
+        plt.xlabel('Frequency [Hz]')
+        plt.ylabel('Amp output [V]')
+        plt.xlim(0, 20000)
+        plt.show()
 
     print(f'Mean: {np.mean(samples):.4f}V; Std: {np.std(samples):.4f}V')
 
-    bb.set_threshold(-52)
+    bb.set_threshold(int(-55))
+    # print('threshold', bb.get_threshold(), bb.get_threshold()*3.3/2**12)
+
+    bb._clear()
+    time.sleep(4)
+    bb._clear()
+    bb._clear()
+    print('clear done')
+
+    local_trig_cnt = 0
     while True:
         bb.read_messages()
 
-        for block_idx, timestamp, overflow, waveform in bb.pulses:
+        for block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger  in bb.pulses:
             print()
-            print(f'time={timestamp*1e-6:.6f}s overflow={overflow}')
+            print(f'time={timestamp*1e-6:.6f}s overflow={overflow} [{trigger_counter}] {local_trig_cnt}')
+            local_trig_cnt += 1
 
             plt.clear_figure()
             plt.plot_size(height=15)

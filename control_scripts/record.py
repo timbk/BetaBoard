@@ -1,5 +1,5 @@
 import sys, time
-from scipy.signal import welch
+from scipy.signal import welch, butter, sosfilt
 try:
     import plotext as plt
     using_plotext = True
@@ -8,9 +8,13 @@ except:
     using_plotext = False
 from betaBoard_interface import betaBoard
 import numpy as np
+from icecream import ic
 
 # Settings
-THRESHOLD = -48
+THRESHOLD = -55
+# THRESHOLD = int(-55 * 1.9)
+print(f'Threshold: {THRESHOLD*3.3/2**12*1e3:.2f} mV')
+#LPF = butter(1, )
 
 # open connection
 bb = betaBoard(sys.argv[1])
@@ -40,16 +44,29 @@ f.flush()
 
 # record pulses
 bb.set_threshold(THRESHOLD)
+
+bb.read_messages()
+bb.pulses = list()
+
+start = time.time()
+pulse_count = 0
 while True:
     bb.read_messages()
 
     for block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger in bb.pulses:
+        pulse_count += 1
         print()
-        print(f'time={timestamp*1e-6:.6f}s overflow={overflow}')
+        print(f'time={timestamp*1e-6:.6f}s overflow={overflow} cnt={pulse_count} ->rate={pulse_count/(time.time()-start):.5f}Hz duration={(time.time()-start)/60:.1f}min')
 
         # TODO: fixme; This is only a hack while the firmware does not guarantee fixed length waveforms yet
-        # if len(waveform) < pre+post:
-        #     waveform = np.array( list(waveform) + list(np.zeros(pre + post - len(waveform))) )
+        if len(waveform) < pre+post:
+            waveform = np.array( list(waveform) + list(np.zeros(pre + post - len(waveform))) )
+            print('short waveform')
+            ic(block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger)
+        if len(waveform) > pre+post:
+            waveform = waveform[:pre+post]
+            print('long_waveform')
+            ic(block_idx, timestamp, overflow, waveform, trigger_counter, block_edge_trigger)
 
         csv_line = f'{block_idx},{timestamp},{int(overflow)},{trigger_counter},{",".join(map(str, waveform))}\n'
         f.write(csv_line)
