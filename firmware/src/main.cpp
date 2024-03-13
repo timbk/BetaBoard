@@ -16,15 +16,17 @@ struct SETTINGS {
     uint samples_pre, samples_post, trigger_ignore;
     bool trigger_enabled;
     uint8_t adc_channel;
+    bool main_loop_blink_enabled;
 };
 
 SETTINGS settings = {
-    -68, // trigger threshold
-    64,  // pre
-    128, // post
-    64,  // trigger_ignore
+    -68,  // trigger threshold
+    64,   // pre
+    128,  // post
+    64,   // trigger_ignore
     true, // trigger_neabled
     DEFAULT_ADC_CHANNEL, // adc channel
+    MAIN_LOOP_BLINK, // main loop blink
 };
 
 bool execute_data_dump_raw = false;
@@ -175,6 +177,7 @@ static const char help_msg[] = "O Usage:\n"
                                "\tb: dump one block of samples of raw values\n"
                                "\tB: dump one block of samples after the high pass filter\n"
                                "\tc <channel>: select/get adc channel (0..3)\n"
+                               "\tl <enabled>: enable/disable blinking led\n"
                                ;
 void handle_user_input(const char *input) {
     uint16_t p1, p2;
@@ -234,6 +237,15 @@ void handle_user_input(const char *input) {
                 adc_select_input(settings.adc_channel);
             }
             printf("Oc %u\n", settings.adc_channel);
+            break;
+        case 'l': // set trigger status
+            if(sscanf(input, "l %hi", &p1) >= 1) {
+                settings.main_loop_blink_enabled = p1;
+                if(not p1) {
+                    gpio_put(LED1_PIN, 0);
+                }
+            }
+            printf("Ol %hi\n", settings.main_loop_blink_enabled!=0 ? 1 : 0);
             break;
         default:
             puts("E Unknown command");
@@ -318,7 +330,7 @@ void actual_main(void) {
 
         read_user_input();
 
-        if(MAIN_LOOP_BLINK) {
+        if(settings.main_loop_blink_enabled) {
             gpio_put(LED1_PIN, (time_us_32() % 1000000) < 900000);
         }
     }
