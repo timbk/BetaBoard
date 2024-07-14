@@ -11,7 +11,7 @@ The detector concept is adapted from the [DIY Particle Detector Project](https:/
 | Revision 1 | Revision 2 |
 | --- | --- |
 | <img src="other/img/picture_pcb_r1.jpeg" width=200 /> | <img src="other/img/picture_pcb_r2.jpeg" width=200 /> |
-| [Schematic](hardware/betaBoard_r1.0/pdf/betaBoard_sch.pdf) [Layout](hardware/betaBoard_r1.0/pdf/betaBoard_pdf.pdf) | [Schematic](hardware/betaBoard/betaBoard_r2.0/betaBoard_r2.0_sch.pdf) |
+| [Schematic](hardware/betaBoard_r1.0/pdf/betaBoard_sch.pdf) [Layout](hardware/betaBoard_r1.0/pdf/betaBoard_pdf.pdf) | [Schematic](hardware/betaBoard_r2.0/betaBoard_r2.0_sch.pdf) |
 | Initial protoype: Working with adjustemtns to a few component values. Requires a lot of electrical and conductive tape to assemble. Designed for 16 diodes with the option to measure coincidences. | Streamlined redesign. Mainly adding a PCB casing to block light and radio imission. Attempting to add a simple alpha particle detector channel by stripping the isolation off of a diode (not successfull yet). Single channel with 6 diodes in parallel. Using additional ADC channels with less gain for debugging and potential experiments with scintillators. |
 
 ## Experiment Ideas
