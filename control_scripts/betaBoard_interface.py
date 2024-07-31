@@ -198,6 +198,40 @@ class betaBoard:
             raise RuntimeError(f'Malformed response: {repr(response)}')
         return value
 
+    def get_uid(self):
+        """ Get the (hopefully) unique ID of the board """
+        response = self._execute_command('u')
+        value = response.split(' ')[0].replace('\n', '').replace('\r', '')
+        return value
+
+    def get_led_status(self, _set_values=[]):
+        """ get wether the main loop led blinking is enabled """
+        response = self._execute_command('l', _set_values)
+        try:
+            value = int(response.split(' ')[0])
+        except:
+            raise RuntimeError(f'Malformed response: {repr(response)}')
+        return value
+
+    def set_led_status(self, led_status):
+        """ Enable/Disable status led blinking """
+        assert led_status in [0, 1]
+        return self.get_led_status([str(led_status)])
+
+    def get_channel(self, _set_values=[]):
+        """ get currently selected channel """
+        response = self._execute_command('c', _set_values)
+        try:
+            value = int(response.split(' ')[0])
+        except:
+            raise RuntimeError(f'Malformed response: {repr(response)}')
+        return value
+
+    def set_channel(self, channel):
+        """ Enable/Disable status led blinking """
+        assert channel in [0, 1, 2, 3]
+        return self.get_channel([str(channel)])
+
 if __name__ == '__main__':
     import sys, time
     from scipy.signal import welch
@@ -211,6 +245,10 @@ if __name__ == '__main__':
     bb = betaBoard(sys.argv[1])
     SR = bb.get_sample_rate()
     print(f'sample rate: {SR} Hz')
+
+    bb.set_channel(3) # select default channel
+
+    bb.set_led_status(0) # disable LED
 
     samples = []
     N = 1
