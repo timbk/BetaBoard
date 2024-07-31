@@ -11,13 +11,27 @@ import numpy as np
 from icecream import ic
 
 # Settings
-THRESHOLD = -55
+CHANNEL = 3 # r2: ch3; r1: ch2
+# THRESHOLD = int(-65*1.35)
+# THRESHOLD = int(-55)
+# THRESHOLD = int(-37)
+THRESHOLD = int(-30)
+# THRESHOLD = int(-30)
 # THRESHOLD = int(-55 * 1.9)
 print(f'Threshold: {THRESHOLD*3.3/2**12*1e3:.2f} mV')
-#LPF = butter(1, )
 
 # open connection
 bb = betaBoard(sys.argv[1])
+bb.set_trigger_status(0) # disable triggering for now
+
+# clear betaBoard buffer
+bb.read_messages()
+bb.pulses = list()
+
+# prepare board
+bb.set_threshold(THRESHOLD)
+bb.set_channel(CHANNEL)
+bb.set_led_status(0) # disable LED
 
 # get board config
 SR = bb.get_sample_rate()
@@ -37,17 +51,20 @@ f = open('recordings/' + fname, 'w')
 # write file header
 f.write(f'# Sample rate: {SR}\n')
 f.write(f'# Firmware version: {firmware_version}\n')
-f.write(f'# Trigger Threshold: {THRESHOLD}\n')
+f.write(f'# Trigger Threshold: {bb.get_threshold()}\n')
 f.write(f'# Comment: {comment}\n')
+f.write(f'# Channel: {bb.get_channel()}\n')
+f.write(f'# LED status: {bb.get_led_status()}\n')
+f.write(f'# Board ID: {bb.get_uid()}\n')
 
 f.flush()
-
-# record pulses
-bb.set_threshold(THRESHOLD)
 
 bb.read_messages()
 bb.pulses = list()
 
+bb.set_trigger_status(1)
+
+# record pulses
 start = time.time()
 pulse_count = 0
 while True:
