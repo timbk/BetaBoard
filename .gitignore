@@ -10,7 +10,9 @@ fp-lib-table
 *.kicad_prl
 *.log
 
-betaBoard/production/
+hardware/*/production/
 
 firmware/src/version.c
 .DS_store
+
+*.json
