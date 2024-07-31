@@ -189,26 +189,26 @@ void handle_user_input(const char *input) {
             printf("Ov ");
             print_version_info();
             break;
-        case 'p': // set pre/post trigger sample count
+        case 'p': // get/set pre/post trigger sample count
             if(sscanf(input, "p %hu %hu", &p1, &p2) >= 2) {
                 settings.samples_pre = p1;
                 settings.samples_post = p2;
             }
             printf("Op %hu %hu\n", settings.samples_pre, settings.samples_post);
             break;
-        case 'i': // set ignored sample count after trigger
+        case 'i': // get/set ignored sample count after trigger
             if(sscanf(input, "i %hu", &p1) >= 1) {
                 settings.trigger_ignore = p1;
             }
             printf("Oi %hu\n", settings.trigger_ignore);
             break;
-        case 't': // set trigger threshold
+        case 't': // get/set trigger threshold
             if(sscanf(input, "t %hi", &p1) >= 1) {
                 settings.trigger_threshold = p1;
             }
             printf("Ot %hi\n", settings.trigger_threshold);
             break;
-        case 'T': // set trigger status
+        case 'T': // get/set trigger status
             if(sscanf(input, "T %hi", &p1) >= 1) {
                 settings.trigger_enabled = p1;
             }
@@ -222,14 +222,11 @@ void handle_user_input(const char *input) {
         case 'B': // dump one full block of samples
             execute_data_dump_hpf = true;
             break;
-        case 'h': // help message
-            puts(help_msg);
-            break;
         case 'P': // dev tool to benchmark high pass filter speed
             puts("O benchmarking");
             benchmark_hpf();
             break;
-        case 'c': // adc channel selection
+        case 'c': // get/set adc channel selection
             if(sscanf(input, "c %hu", &p1) >= 1) {
                 if(p1 >= 4) {
                     puts("E ADC channel must be in 0..3");
@@ -240,7 +237,7 @@ void handle_user_input(const char *input) {
             }
             printf("Oc %u\n", settings.adc_channel);
             break;
-        case 'l': // set trigger status
+        case 'l': // set/get main loop led blink status
             if(sscanf(input, "l %hi", &p1) >= 1) {
                 settings.main_loop_blink_enabled = p1;
                 if(not p1) {
@@ -249,7 +246,7 @@ void handle_user_input(const char *input) {
             }
             printf("Ol %hi\n", settings.main_loop_blink_enabled!=0 ? 1 : 0);
             break;
-        case 'u': // help message
+        case 'u': // get unique ID
             uint8_t uid[8];
             flash_get_unique_id(uid);
             printf("Ou ");
@@ -257,6 +254,9 @@ void handle_user_input(const char *input) {
                 printf("%02X", uid[i]);
             }
             puts("");
+            break;
+        case 'h': // help message
+            puts(help_msg);
             break;
         default:
             puts("E Unknown command");
